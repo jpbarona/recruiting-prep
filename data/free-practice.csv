@@ -1,0 +1,13 @@
+category,title,description,url,suggested_minutes
+Mental Math,TraderMath mental math,Speed arithmetic drills,https://www.tradermath.org/mental-math,10
+Mental Math,Zetamac arithmetic,Timed arithmetic practice,https://arithmetic.zetamac.com/,10
+Probability,QuantGuide Trader 75,Interview-style question bank,https://quantguide.io/,20
+Probability,QuantQuestions,Probability and brainteasers,https://www.quantquestions.com/,20
+Probability,Jane Street Probability & Markets,Official probability material,https://www.janestreet.com/probability-and-markets/,30
+Market Making,TraderMath market games,Simulated market making,https://www.tradermath.org/market-making-games,15
+Market Making,Dice market making,Practice with dice-based markets,,15
+Market Making,Card game,Card-based market making practice,,15
+Market Making,ETF/arbitrage-style games,Arbitrage and ETF style drills,,20
+Review,Review open errors,Work through open mistakes in Errors log,/errors,
+Review,Re-solve retry-due errors,Errors marked Retry Due,/errors?status=Retry%20Due,
+Review,Explain an old solution aloud,Pick a past problem and explain without notes,,10
