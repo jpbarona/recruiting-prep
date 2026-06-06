@@ -4,6 +4,7 @@ import type {
   PlannedDay,
   Resource,
   Session,
+  TopicProgress,
   Workout,
 } from "../types";
 import { fetchCsv, parseCsv, saveCsv, serializeCsv } from "./csv";
@@ -13,6 +14,7 @@ import {
   isIsoDateString,
   isPlannedType,
 } from "./validation";
+import { TOPICS } from "./topics";
 
 export interface LoadAllDataResult {
   workouts: Workout[];
@@ -21,6 +23,7 @@ export interface LoadAllDataResult {
   errors: ErrorEntry[];
   resources: Resource[];
   freePractice: FreePracticeItem[];
+  topicProgress: TopicProgress[];
   warnings: string[];
 }
 
@@ -189,6 +192,35 @@ function mapResources(
   return out;
 }
 
+function mapTopicProgress(
+  rows: Record<string, string>[],
+  warnings: string[]
+): TopicProgress[] {
+  const out: TopicProgress[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const rowNum = i + 2;
+    if (!r.topic?.trim()) {
+      warnings.push(`topic-progress.csv row ${rowNum}: missing topic`);
+      continue;
+    }
+    const readyDate = r.ready_date?.trim() ?? "";
+    if (readyDate && !isIsoDateString(readyDate)) {
+      warnings.push(`topic-progress.csv row ${rowNum}: invalid ready_date`);
+      continue;
+    }
+    out.push({
+      topic: r.topic,
+      ready_date: readyDate,
+    });
+  }
+  return out;
+}
+
+function seedTopicProgress(): TopicProgress[] {
+  return TOPICS.map((topic) => ({ topic, ready_date: "" }));
+}
+
 function mapFreePractice(
   rows: Record<string, string>[],
   warnings: string[]
@@ -215,7 +247,7 @@ function mapFreePractice(
 export async function loadAllData(): Promise<LoadAllDataResult> {
   const warnings: string[] = [];
 
-  const [workoutsText, plannedText, sessionsText, errorsText, resourcesText, freeText] =
+  const [workoutsText, plannedText, sessionsText, errorsText, resourcesText, freeText, topicText] =
     await Promise.all([
       fetchCsv("workouts"),
       fetchCsv("planned-days"),
@@ -223,6 +255,7 @@ export async function loadAllData(): Promise<LoadAllDataResult> {
       fetchCsv("errors"),
       fetchCsv("resources"),
       fetchCsv("free-practice"),
+      fetchCsv("topic-progress"),
     ]);
 
   const workoutsParsed = parseCsv(workoutsText, "workouts.csv");
@@ -231,6 +264,7 @@ export async function loadAllData(): Promise<LoadAllDataResult> {
   const errorsParsed = parseCsv(errorsText, "errors.csv");
   const resourcesParsed = parseCsv(resourcesText, "resources.csv");
   const freeParsed = parseCsv(freeText, "free-practice.csv");
+  const topicParsed = parseCsv(topicText, "topic-progress.csv");
 
   warnings.push(
     ...workoutsParsed.warnings,
@@ -238,7 +272,8 @@ export async function loadAllData(): Promise<LoadAllDataResult> {
     ...sessionsParsed.warnings,
     ...errorsParsed.warnings,
     ...resourcesParsed.warnings,
-    ...freeParsed.warnings
+    ...freeParsed.warnings,
+    ...topicParsed.warnings
   );
 
   const workouts = mapWorkouts(workoutsParsed.rows, warnings);
@@ -247,6 +282,7 @@ export async function loadAllData(): Promise<LoadAllDataResult> {
   const errors = mapErrors(errorsParsed.rows, warnings);
   const resources = mapResources(resourcesParsed.rows, warnings);
   const freePractice = mapFreePractice(freeParsed.rows, warnings);
+  const topicProgress = mapTopicProgress(topicParsed.rows, warnings);
 
   if (!workouts.length) {
     throw new Error("workouts.csv has no valid rows");
@@ -262,6 +298,7 @@ export async function loadAllData(): Promise<LoadAllDataResult> {
     errors,
     resources,
     freePractice,
+    topicProgress: topicProgress.length ? topicProgress : seedTopicProgress(),
     warnings,
   };
 }
@@ -302,6 +339,13 @@ export async function saveErrors(errors: ErrorEntry[]) {
       "status",
       "notes",
     ])
+  );
+}
+
+export async function saveTopicProgress(topicProgress: TopicProgress[]) {
+  await saveCsv(
+    "topic-progress",
+    serializeCsv(topicProgress, ["topic", "ready_date"])
   );
 }
 

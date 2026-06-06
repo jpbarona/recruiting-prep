@@ -54,3 +54,8 @@ export interface FreePracticeItem {
   url: string;
   suggested_minutes: string;
 }
+
+export interface TopicProgress {
+  topic: string;
+  ready_date: string;
+}

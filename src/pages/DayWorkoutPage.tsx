@@ -12,8 +12,108 @@ import {
   isFutureDate,
   isPastDate,
 } from "../lib/dates";
+import { pickMixedTopic } from "../lib/topics";
 import { isTrainingDate } from "../lib/validation";
 import type { Energy, PlannedType } from "../types";
+
+const QUANT_QUESTIONS_URL = "https://quantquestions.io/problems";
+
+function TopicSection({
+  current,
+  upNext,
+}: {
+  current: string;
+  upNext: string[];
+}) {
+  return (
+    <section className="topic-section">
+      <p className="topic-current">
+        Topic: <strong>{current}</strong>
+      </p>
+      {upNext.length > 0 && (
+        <p className="topic-up-next muted small">
+          Up next: {upNext.join(" → ")}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function DoneView({
+  date,
+  sessionEnergy,
+}: {
+  date: string;
+  sessionEnergy?: Energy;
+}) {
+  const {
+    getTopicForDate,
+    getReadyTopics,
+    isTopicReady,
+    markTopicReady,
+  } = useAppData();
+  const [mixedTopic, setMixedTopic] = useState<string | null>(null);
+
+  const topicInfo = getTopicForDate(date);
+  const readyTopics = getReadyTopics(date);
+  const showTopicControls = topicInfo !== null;
+  const currentReady = topicInfo ? isTopicReady(topicInfo.current) : false;
+
+  const handleMixedRotation = () => {
+    setMixedTopic(pickMixedTopic(readyTopics));
+  };
+
+  return (
+    <div className="day-workout done-view">
+      {topicInfo && <TopicSection current={topicInfo.current} upNext={topicInfo.upNext} />}
+      <p className="done-message">
+        Done. Stop here unless you genuinely have spare energy.
+      </p>
+      {sessionEnergy && (
+        <p className="muted">
+          {formatDisplayDate(date)} · {sessionEnergy} session completed
+        </p>
+      )}
+      {showTopicControls && !currentReady && (
+        <button
+          type="button"
+          className="btn"
+          onClick={() => void markTopicReady(topicInfo!.current, date)}
+        >
+          Mark &ldquo;{topicInfo!.current}&rdquo; ready for mixed rotation
+        </button>
+      )}
+      {showTopicControls && (
+        <div className="mixed-rotation">
+          <button
+            type="button"
+            className="btn btn-ghost"
+            disabled={readyTopics.length === 0}
+            onClick={handleMixedRotation}
+          >
+            Mixed rotation
+          </button>
+          {mixedTopic && (
+            <p className="mixed-topic-result muted">
+              Practice: <strong>{mixedTopic}</strong>
+            </p>
+          )}
+        </div>
+      )}
+      <a
+        href={QUANT_QUESTIONS_URL}
+        target="_blank"
+        rel="noreferrer"
+        className="btn"
+      >
+        QuantQuestions
+      </a>
+      <Link to="/" className="btn btn-ghost">
+        Back to Calendar
+      </Link>
+    </div>
+  );
+}
 
 export function DayWorkoutPage() {
   const { date = "" } = useParams();
@@ -23,7 +123,7 @@ export function DayWorkoutPage() {
     getPlanned,
     getSession,
     getWorkout,
-    resources,
+    getTopicForDate,
     completeSession,
     addError,
     updatePlannedType,
@@ -39,6 +139,7 @@ export function DayWorkoutPage() {
   const planned = getPlanned(date);
   const session = getSession(date);
   const workout = getWorkout(date, energy);
+  const topicInfo = getTopicForDate(date);
   const phase = planned?.phase ?? getPhase(date);
   const countdown = daysUntilRed(date);
 
@@ -50,48 +151,12 @@ export function DayWorkoutPage() {
   if (error) return <p className="status error">{error}</p>;
 
   if (session && !completed) {
-    return (
-      <div className="day-workout done-view">
-        <p className="done-message">
-          Done. Stop here unless you genuinely have spare energy.
-        </p>
-        <p className="muted">
-          {formatDisplayDate(date)} · {session.chosen_energy} session completed
-        </p>
-        <Link to="/free-practice" className="btn">
-          Free Practice
-        </Link>
-        <Link to="/" className="btn btn-ghost">
-          Back to Calendar
-        </Link>
-      </div>
-    );
+    return <DoneView date={date} sessionEnergy={session.chosen_energy} />;
   }
 
   if (completed) {
-    return (
-      <div className="day-workout done-view">
-        <p className="done-message">
-          Done. Stop here unless you genuinely have spare energy.
-        </p>
-        <Link to="/free-practice" className="btn">
-          Free Practice
-        </Link>
-        <Link to="/" className="btn btn-ghost">
-          Back to Calendar
-        </Link>
-      </div>
-    );
+    return <DoneView date={date} />;
   }
-
-  const refTitles =
-    workout?.resource_refs
-      ?.split(",")
-      .map((s) => s.trim())
-      .filter(Boolean) ?? [];
-  const linkedResources = refTitles
-    .map((title) => resources.find((r) => r.title === title))
-    .filter((r): r is NonNullable<typeof r> => Boolean(r));
 
   const handleComplete = async () => {
     try {
@@ -124,6 +189,10 @@ export function DayWorkoutPage() {
           {countdown} day{countdown === 1 ? "" : "s"} to red date
         </p>
       </header>
+
+      {topicInfo && (
+        <TopicSection current={topicInfo.current} upNext={topicInfo.upNext} />
+      )}
 
       <section className="planned-section">
         <p>
@@ -167,22 +236,14 @@ export function DayWorkoutPage() {
               <li key={i}>{task}</li>
             ))}
           </ol>
-          {linkedResources.length > 0 && (
-            <div className="workout-resources">
-              <p className="resource-label">Resources</p>
-              {linkedResources.map((r) => (
-                <a
-                  key={r.title}
-                  href={r.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="resource-link"
-                >
-                  {r.title}
-                </a>
-              ))}
-            </div>
-          )}
+          <a
+            href={QUANT_QUESTIONS_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="btn btn-small"
+          >
+            QuantQuestions
+          </a>
         </section>
       ) : (
         <p className="status">No workout found for this day and energy.</p>

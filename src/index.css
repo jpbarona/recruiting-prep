@@ -161,10 +161,41 @@ a:hover {
 }
 
 .cell-planned,
-.cell-done {
+.cell-done,
+.cell-topic {
   display: block;
   font-size: 0.75rem;
   margin-top: 0.35rem;
+}
+
+.cell-topic {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.topic-section {
+  margin: 1rem 0 1.5rem;
+  padding: 1rem;
+  background: var(--bg-elevated);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.topic-current {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.topic-up-next {
+  margin: 0.5rem 0 0;
+}
+
+.mixed-rotation {
+  margin: 0.75rem 0;
+}
+
+.mixed-topic-result {
+  margin: 0.5rem 0 0;
 }
 
 .completed-red {

@@ -23,6 +23,7 @@ const ALLOWED = new Set([
   "resources",
   "planned-days",
   "free-practice",
+  "topic-progress",
 ]);
 
 type Middleware = (

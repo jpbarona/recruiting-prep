@@ -13,7 +13,12 @@ import {
   saveErrors,
   savePlannedDays,
   saveSessions,
+  saveTopicProgress,
 } from "../lib/dataStore";
+import {
+  getReadyTopicsForMixed,
+  getTopicForDate as resolveTopicForDate,
+} from "../lib/topics";
 import type {
   ErrorEntry,
   FreePracticeItem,
@@ -21,6 +26,7 @@ import type {
   PlannedType,
   Resource,
   Session,
+  TopicProgress,
   Workout,
 } from "../types";
 import type { Energy } from "../types";
@@ -33,6 +39,7 @@ interface AppData {
   errors: ErrorEntry[];
   resources: Resource[];
   freePractice: FreePracticeItem[];
+  topicProgress: TopicProgress[];
   loading: boolean;
   error: string | null;
   loadWarnings: string[];
@@ -44,6 +51,10 @@ interface AppData {
   updateError: (entry: ErrorEntry) => Promise<void>;
   getSession: (date: string) => Session | undefined;
   getWorkout: (date: string, energy: Energy) => Workout | undefined;
+  markTopicReady: (topic: string, date: string) => Promise<void>;
+  getTopicForDate: (date: string) => { current: string; upNext: string[] } | null;
+  getReadyTopics: (date: string) => string[];
+  isTopicReady: (topic: string) => boolean;
 }
 
 const AppDataContext = createContext<AppData | null>(null);
@@ -56,6 +67,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [errors, setErrors] = useState<ErrorEntry[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [freePractice, setFreePractice] = useState<FreePracticeItem[]>([]);
+  const [topicProgress, setTopicProgress] = useState<TopicProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadWarnings, setLoadWarnings] = useState<string[]>([]);
@@ -72,6 +84,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setErrors(data.errors);
       setResources(data.resources);
       setFreePractice(data.freePractice);
+      setTopicProgress(data.topicProgress);
       setLoadWarnings(data.warnings);
       if (data.warnings.length > 0) {
         toast.showInfo(
@@ -190,6 +203,40 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [errors, persist, toast]
   );
 
+  const markTopicReady = useCallback(
+    async (topic: string, readyDate: string) => {
+      const previous = topicProgress;
+      const next = topicProgress.map((p) =>
+        p.topic === topic ? { ...p, ready_date: readyDate } : p
+      );
+      await persist(
+        "topic progress",
+        previous,
+        next,
+        setTopicProgress,
+        saveTopicProgress
+      );
+      toast.showSuccess(`${topic} marked ready for mixed rotation.`);
+    },
+    [topicProgress, persist, toast]
+  );
+
+  const getTopicForDate = useCallback(
+    (date: string) => resolveTopicForDate(topicProgress, date),
+    [topicProgress]
+  );
+
+  const getReadyTopics = useCallback(
+    (date: string) => getReadyTopicsForMixed(topicProgress, date),
+    [topicProgress]
+  );
+
+  const isTopicReady = useCallback(
+    (topic: string) =>
+      Boolean(topicProgress.find((p) => p.topic === topic)?.ready_date),
+    [topicProgress]
+  );
+
   const value = useMemo(
     () => ({
       workouts,
@@ -198,6 +245,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       errors,
       resources,
       freePractice,
+      topicProgress,
       loading,
       error,
       loadWarnings,
@@ -209,6 +257,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       updateError,
       getSession,
       getWorkout,
+      markTopicReady,
+      getTopicForDate,
+      getReadyTopics,
+      isTopicReady,
     }),
     [
       workouts,
@@ -217,6 +269,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       errors,
       resources,
       freePractice,
+      topicProgress,
       loading,
       error,
       loadWarnings,
@@ -228,6 +281,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       updateError,
       getSession,
       getWorkout,
+      markTopicReady,
+      getTopicForDate,
+      getReadyTopics,
+      isTopicReady,
     ]
   );
 

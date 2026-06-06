@@ -31,4 +31,5 @@ export type CsvFile =
   | "errors"
   | "resources"
   | "planned-days"
-  | "free-practice";
+  | "free-practice"
+  | "topic-progress";

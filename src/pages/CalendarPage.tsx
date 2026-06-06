@@ -10,7 +10,7 @@ function completionClass(energy?: Energy, planned?: PlannedType): string {
 }
 
 export function CalendarPage() {
-  const { loading, error, getPlanned, getSession, plannedDays, updatePlannedType } =
+  const { loading, error, getPlanned, getSession, getTopicForDate, plannedDays, updatePlannedType } =
     useAppData();
   const dates = enumerateTrainingDates();
   const today = todayString();
@@ -27,6 +27,7 @@ export function CalendarPage() {
         {dates.map((date) => {
           const planned = getPlanned(date);
           const session = getSession(date);
+          const topicInfo = getTopicForDate(date);
           const isFuture = date > today;
           const isPast = date < today;
           const cellClass = [
@@ -43,6 +44,9 @@ export function CalendarPage() {
               <Link to={`/day/${date}`} className="cell-link">
                 <span className="cell-date">{formatDisplayDate(date)}</span>
                 <span className="cell-phase">{planned?.phase}</span>
+                {topicInfo && (
+                  <span className="cell-topic">{topicInfo.current}</span>
+                )}
                 {planned?.planned_type && planned.planned_type !== "Flexible" && (
                   <span className="cell-planned">{planned.planned_type}</span>
                 )}
