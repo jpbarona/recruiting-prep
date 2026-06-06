@@ -1,2 +1,4 @@
 id,date,source,topic,mistake_type,lesson,retry_date,status,notes
 1,2026-06-03,Manual log,Poker Hands I,Counting/combinatorics,Need more experience,2026-06-20,Open,
+2,2026-06-06,Circular charlie quantquestions,Combinatorics,Counting/combinatorics,Need practice,2026-06-15,Open,
+3,2026-06-06,Colurful cube quantquestions,Combinatorics,Counting/combinatorics,Redo,2026-06-15,Open,1
